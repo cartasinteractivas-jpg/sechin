@@ -1,0 +1,1641 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recepcion y registor Emergencia Seguros</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+<style>
+  /* --- INICIO DEL CÓDIGO CSS --- */
+
+:root {
+    --header-primary-start: #667eea;
+    --header-primary-end: #764ba2;
+    --hch-blue: #1A4A8A;
+    --hch-yellow: #F2C744;
+    --background-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100% );
+}
+body { margin: 0; font-family: 'Inter', sans-serif; background: var(--background-gradient); display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; }
+.mobile-container { width: 390px; height: 700px; position: relative; overflow: hidden; border-radius: 45px; box-shadow: 0 15px 40px rgba(0,0,0,0.25); background: #ffffff; border: 12px solid #fff; }
+#assistant-video { position: absolute; bottom: 30px; height: 85%; z-index: 1; transition: all 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55); object-fit: cover; object-position: center top; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.1)); }
+#assistant-video.initial-state { right: 50%; transform: translateX(50%); height: 90%; }
+#assistant-video.side-state { right: -40px; transform: translateX(0); }
+#assistant-video.hidden { opacity: 0; pointer-events: none; }
+.header { position: absolute; top: 0; left: 0; right: 0; height: 90px; background: linear-gradient(135deg, var(--header-primary-start) 0%, var(--header-primary-end) 100%); z-index: 5; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 0 25px; box-sizing: border-box; }
+.header-title { color: white; font-size: 24px; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); cursor: pointer; }
+.logout-button { background: none; border: none; color: white; font-size: 24px; cursor: pointer; }
+
+/* --- ESTILO PARA AÑADIR IMAGEN DE FONDO AL MENÚ PRINCIPAL --- */
+
+#main-content {
+    /* 1. Establecemos la imagen de fondo. ¡IMPORTANTE usar la URL con ?raw=true! */
+    background-image: url('https://github.com/Dafon1981/recepcion_emergencia/blob/main/fondoappregistro.jpg?raw=true' );
+    
+    /* 2. Nos aseguramos de que la imagen cubra todo el espacio disponible */
+    background-size: cover;
+    
+    /* 3. Centramos la imagen para que siempre se vea la parte más importante */
+    background-position: center center;
+}
+
+/* --- FIN DE ESTILOS --- */
+
+    
+/* === INICIO DEL NUEVO DISEÑO DE BOTONES (MÁS GRANDES Y SEPARADOS) === */
+
+.menu-button {
+    position: absolute;
+    left: 25px;
+    z-index: 10;
+    
+    /* --- ¡CAMBIO 1: BOTONES MÁS ANCHOS! --- */
+    width: 200px; /* Aumentamos el ancho de 180px a 200px */
+    
+    /* --- ¡CAMBIO 2: BOTONES MÁS ALTOS! --- */
+    padding: 20px 25px; /* Aumentamos el padding vertical de 18px a 20px */
+    
+    background: linear-gradient(145deg, #1d4a8f, #183e7a);
+    border: 1px solid #163461;
+    border-top-color: #2c63b5;
+    color: white;
+    text-align: center;
+    border-radius: 30px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+    transition: all 0.2s ease-out;
+    opacity: 0;
+    transform: translateX(-30px);
+    pointer-events: none;
+}
+
+.menu-button.visible {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+}
+
+.menu-button.hidden-by-view {
+    opacity: 0;
+    transform: translateX(-30px);
+    pointer-events: none;
+}
+
+/* --- REGLA PARA OCULTAR TEMPORALMENTE EL BOTÓN "OBSERVADOS" --- */
+
+#btn-portafolio {
+    display: none !important;
+}
+
+/* --- FIN DE LA REGLA --- */
+
+
+
+    
+
+    
+/* --- ¡CAMBIO 3: MÁS SEPARACIÓN VERTICAL! (REAJUSTADO) --- */
+#btn-servicios { top: 120px; transition-delay: 0.2s; }   /* Búsqueda */
+/* #btn-portafolio está oculto */
+#btn-nosotros { top: 210px; transition-delay: 0.3s; }   /* Conocimiento (sube a la posición de Observados) */
+#btn-contacto { top: 300px; transition-delay: 0.4s; }   /* Contacto (sube a la posición de Conocimiento) */
+#btn-administrar { top: 390px; transition-delay: 0.5s; } /* Administrar (sube a la posición de Contacto) */
+#btn-logout { top: 520px; transition-delay: 0.6s; }      /* Cerrar Sesión (lo subimos un poco también) */
+
+
+.menu-button.active {
+    background: linear-gradient(145deg, #f2c744, #e6b833);
+    color: var(--hch-blue);
+    border-color: #d3a52b;
+    border-top-color: #fde088;
+}
+
+.menu-button:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.15);
+}
+
+.menu-button:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2), inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* === FIN DEL NUEVO DISEÑO DE BOTONES === */
+
+
+
+/* === ESTILO PARA EL BOTÓN DE ELIMINAR USUARIO === */
+.delete-user-btn {
+    background-color: #e74c3c; /* Rojo para indicar peligro/eliminar */
+    color: white;
+    border: none;
+    border-radius: 50%; /* Lo hace circular */
+    width: 30px;
+    height: 30px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-left: 10px;
+    transition: background-color 0.2s;
+}
+
+.delete-user-btn:hover {
+    background-color: #c0392b; /* Rojo más oscuro al pasar el mouse */
+}
+
+    
+
+    .menu-toggle { display: none; position: absolute; right: 25px; bottom: 35px; background: var(--hch-blue); width: 50px; height: 50px; border-radius: 50%; border: none; color: white; font-size: 24px; cursor: pointer; z-index: 12; box-shadow: 0 4px 10px rgba(0,0,0,0.2); justify-content: center; align-items: center; }
+.menu-toggle.visible { display: flex; }
+
+
+
+    
+/* --- AÑADE ESTAS REGLAS CSS --- */
+
+.consumo-status {
+    font-weight: bold;
+    font-size: 12px;
+}
+
+.con-consumo {
+    color: #28a745; /* Verde */
+}
+
+.sin-consumo {
+    color: #dc3545; /* Rojo */
+}
+
+
+/* --- INICIO DE ESTILOS PARA UBICACIÓN PROBABLE --- */
+
+.ubicacion-probable {
+    font-weight: bold;
+    font-size: 12px;
+}
+
+/* Nuevas clases para los colores de estado */
+.ubicacion-asignacion { color: #28a745; } /* Verde */
+.ubicacion-auditoria { color: #fd7e14; } /* Naranja */
+.ubicacion-seguros { color: #dc3545; } /* Rojo */
+.ubicacion-central { color: #6f42c1; } /* Morado */
+
+/* --- FIN DE ESTILOS PARA UBICACIÓN PROBABLE --- */
+
+
+
+    
+/* --- AÑADE ESTA REGLA CSS --- */
+
+.ubicacion-probable {
+    font-weight: bold;
+    font-size: 12px;
+    color: #1A4A8A; /* Usamos el azul del hospital para que destaque */
+}
+
+
+    /* --- AÑADE ESTAS REGLAS CSS --- */
+
+/* Estilo para el contenedor de publicidad */
+.ad-container {
+    /* ... (los estilos que ya tenías) ... */
+    padding: 0; /* Quitamos el padding para que el video ocupe todo el espacio */
+    overflow: hidden; /* Asegura que el video no se salga de los bordes redondeados */
+}
+
+/* Estilo para el video dentro del contenedor */
+
+
+/* --- AÑADE ESTAS REGLAS CSS --- */
+
+#splash-container {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 30;
+    transition: opacity 0.8s ease-out;
+
+    /* --- ¡AQUÍ ESTÁ LA MAGIA! --- */
+    /* 1. Establecemos la imagen de fondo. Usamos la URL con ?raw=true */
+    background-image: url('https://github.com/Dafon1981/recepcion_emergencia/blob/main/fondoappregistro.jpg?raw=true' );
+    
+    /* 2. Nos aseguramos de que la imagen cubra todo el contenedor */
+    background-size: cover;
+    
+    /* 3. Centramos la imagen para que se vea bien en cualquier pantalla */
+    background-position: center center;
+    
+    /* 4. Ponemos un color de fondo oscuro por si la imagen también tarda en cargar */
+    background-color: #1A4A8A; 
+}
+
+
+#splash-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Esto hace que el video cubra toda la pantalla, sin franjas */
+}
+
+
+/* --- INICIO DE ESTILOS PARA BÚSQUEDA POR FECHA --- */
+
+/* Hacemos que el formulario sea vertical */
+.search-form.vertical {
+    flex-direction: column;
+    gap: 15px; /* Espacio entre la fila de búsqueda y la de fecha */
+}
+
+/* Contenedor para la búsqueda principal (texto y botón ) */
+.main-search-row {
+    display: flex;
+    width: 100%;
+    gap: 10px;
+}
+
+/* Contenedor para la búsqueda por fecha */
+.date-search-row {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 5px;
+}
+
+.date-search-row label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--hch-blue);
+}
+
+/* Estilo para el input de fecha */
+.date-input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    font-size: 16px;
+    font-family: 'Inter', sans-serif;
+    box-sizing: border-box;
+}
+
+/* --- FIN DE ESTILOS PARA BÚSQUEDA POR FECHA --- */
+
+
+    /* --- INICIO DE ESTILOS PARA LA SECCIÓN "ACERCA DE NOSOTROS" --- */
+
+#view-nosotros .intro-text {
+    text-align: left;
+    margin-bottom: 25px;
+    padding: 0 10px;
+}
+
+#view-nosotros h3 {
+    font-size: 18px;
+    color: var(--hch-blue);
+    margin-bottom: 5px;
+}
+
+#view-nosotros p {
+    text-align: left;
+    font-size: 15px;
+    line-height: 1.5;
+    margin-top: 0;
+}
+
+/* Estilo para los botones desplegables (preguntas frecuentes) */
+.faq-item {
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    overflow: hidden; /* Para que el contenido no se salga de los bordes redondeados */
+}
+
+.faq-item summary {
+    padding: 15px 20px;
+    font-weight: 600;
+    color: var(--hch-blue);
+    background-color: #f0f4f8;
+    cursor: pointer;
+    list-style: none; /* Quita el triángulo por defecto */
+    position: relative;
+    outline: none;
+}
+
+/* Añadimos nuestro propio ícono de flecha */
+.faq-item summary::after {
+    content: '▼';
+    font-size: 12px;
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    transition: transform 0.2s ease-in-out;
+}
+
+/* Giramos la flecha cuando el elemento está abierto */
+.faq-item[open] > summary::after {
+    transform: translateY(-50%) rotate(180deg);
+}
+
+.faq-content {
+    padding: 0px 20px 20px 20px;
+    background-color: #ffffff;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #333;
+}
+
+.faq-content ul {
+    padding-left: 20px;
+    margin-top: 10px;
+}
+
+.faq-content li {
+    margin-bottom: 8px;
+}
+
+    /* --- CORRECCIÓN PARA PERMITIR EL SCROLL --- */
+#view-nosotros {
+    overflow-y: auto; /* Permite el desplazamiento vertical cuando sea necesario */
+}
+
+/* --- FIN DE ESTILOS PARA "ACERCA DE NOSOTROS" --- */
+
+
+
+.logout-button { 
+    background: none; 
+    border: none; 
+    color: white; 
+    font-size: 24px; 
+    cursor: pointer; 
+}
+
+
+.logout-button:hover {
+    background-color: #c0392b; /* Rojo más oscuro al pasar el mouse */
+}
+
+
+
+/* --- INICIO DE ESTILOS PARA EL NUEVO BOTÓN DE CERRAR SESIÓN --- */
+
+/* Posicionamos el nuevo botón más abajo y con más separación */
+#btn-logout {
+    top: 580px; /* Aumentamos la separación (antes el último estaba en 480px) */
+    transition-delay: 0.7s;
+}
+
+/* Estilo específico para el botón de logout */
+.logout-style {
+    /* Lo hacemos un poco más pequeño */
+    width: 180px; 
+    padding: 15px 25px;
+    font-size: 15px;
+
+    /* Le damos el color rojo de "peligro/salida" */
+    background: linear-gradient(145deg, #e74c3c, #c0392b);
+    border-color: #a53125;
+    border-top-color: #f18a7e;
+}
+
+/* Efecto hover específico para el botón rojo */
+.logout-style:hover {
+    background: linear-gradient(145deg, #f18a7e, #e74c3c);
+}
+
+/* --- FIN DE ESTILOS --- */
+
+
+    
+.content-view { position: absolute; top: 100px; left: 15px; right: 15px; bottom: 25px; background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(8px); border-radius: 30px; z-index: 11; opacity: 0; transform: translateY(30px); pointer-events: none; transition: all 0.5s ease-out; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden; }
+.content-view.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.content-view h2 { color: var(--hch-blue); text-align: center; margin-top: 10px; margin-bottom: 15px; flex-shrink: 0; }
+.content-view h3 { color: var(--hch-blue); margin-top: 0; flex-shrink: 0; }
+.content-view p { color: #333; line-height: 1.6; text-align: center; margin-bottom: 20px; flex-shrink: 0; }
+
+#search-main-view, #observados-main-view { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+.search-form { display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
+.search-input { flex-grow: 1; padding: 15px; border: 1px solid #ccc; border-radius: 25px; font-size: 16px; outline-color: var(--hch-blue); }
+.search-button { background: var(--hch-blue); border: none; border-radius: 50%; width: 50px; height: 50px; display: flex; justify-content: center; align-items: center; cursor: pointer; }
+.search-button img { width: 28px; height: 28px; filter: invert(1); }
+
+.search-results-container { margin-top: 20px; flex-grow: 1; overflow-y: auto; }
+.result-item { padding: 15px; border-bottom: 1px solid #ddd; cursor: pointer; transition: background-color 0.2s; }
+.result-item:hover { background-color: #e2e8f0; }
+.result-item-name { font-weight: 600; font-size: 16px; color: #2d3748; }
+.result-item-sub { font-size: 14px; color: #718096; }
+.loading-spinner, .no-results { text-align: center; padding: 20px; font-size: 16px; color: #718096; flex-shrink: 0; }
+.loading-spinner { display: none; }
+
+#patient-details-view { display: none; flex-direction: column; height: 100%; overflow: hidden; }
+#details-content { flex-grow: 1; overflow-y: auto; padding-right: 10px; }
+.detail-item { margin-bottom: 12px; }
+.detail-item label { font-weight: bold; color: #4a5568; display: block; margin-bottom: 4px; font-size: 12px; text-transform: uppercase;}
+.detail-item span { font-size: 16px; color: #1a202c; word-break: break-word; }
+.back-button { background: var(--hch-yellow); color: var(--hch-blue); padding: 12px; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 15px; flex-shrink: 0; }
+
+.tab-container { display: flex; border-bottom: 2px solid #ccc; margin-bottom: 20px; flex-shrink: 0; }
+.tab-button { flex: 1; padding: 12px; border: none; background: none; cursor: pointer; font-size: 16px; font-weight: 600; color: #777; transition: all 0.3s ease; border-bottom: 3px solid transparent; }
+.tab-button.active { color: var(--hch-blue); border-bottom-color: var(--hch-blue); }
+.tab-content { display: none; flex-direction: column; flex-grow: 1; overflow: hidden; }
+.tab-content.active { display: flex; }
+#add-obs-content { overflow-y: auto; padding-right: 10px; }
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group label { font-weight: 600; color: #555; font-size: 14px; }
+.form-group input, .form-group textarea { width: 100%; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
+.ingreso-entry { padding: 15px; border: 1px solid #ddd; border-radius: 10px; margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px; }
+.observation-controls { display: flex; gap: 10px; margin-top: 10px; }
+.control-button { width: 35px; height: 35px; border-radius: 50%; border: none; font-size: 20px; font-weight: bold; color: white; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+.add-btn { background-color: #28a745; }
+.remove-btn { background-color: #dc3545; }
+.save-button { background: var(--hch-blue); color: white; padding: 15px; border: none; border-radius: 12px; font-size: 18px; cursor: pointer; margin-top: 15px; flex-shrink: 0; }
+
+#user-list-container { flex-grow: 1; overflow-y: auto; }
+.user-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 5px; border-bottom: 1px solid #ddd; gap: 10px; }
+.user-info { flex-grow: 1; }
+.user-name { font-weight: 600; }
+.user-email { font-size: 12px; color: #666; }
+.user-status { font-size: 12px; font-weight: bold; padding: 3px 6px; border-radius: 5px; color: white; }
+.status-admin { background-color: #28a745; }
+.status-usuario { background-color: #6c757d; }
+.user-actions { display: flex; align-items: center; gap: 15px; }
+.delete-button { background: #dc3545; color: white; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-weight: bold; }
+.switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+    /* --- AÑADE ESTA REGLA CSS --- */
+.switch input:not(:checked) + .slider {
+    background-color: #dc3545; /* Color rojo para cuando está desactivado */
+}
+
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
+.slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+input:checked + .slider { background-color: var(--hch-blue); }
+input:checked + .slider:before { transform: translateX(20px); }
+
+/* === ESTILOS PARA LOGIN Y REGISTRO === */
+#auth-container {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: var(--background-gradient);
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+    box-sizing: border-box;
+}
+.auth-form {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    gap: 15px; /* Espacio entre elementos */
+}
+.auth-form.active { display: flex; }
+.auth-form h2 { color: var(--hch-blue); text-align: center; }
+.auth-form input { padding: 15px; border: 1px solid #ccc; border-radius: 10px; font-size: 16px; }
+.auth-form button[type="submit"] { background: var(--hch-blue); color: white; padding: 15px; border: none; border-radius: 10px; font-size: 18px; cursor: pointer; }
+.auth-form .secondary-button {
+    background: var(--hch-yellow);
+    color: var(--hch-blue);
+    font-weight: bold;
+    /* Eliminamos el margen superior para que el 'gap' del contenedor lo gestione */
+    padding: 15px; /* Mismo padding que el botón principal */
+    border: none;
+    border-radius: 10px; /* Mismo borde que el botón principal */
+    font-size: 18px; /* Misma fuente que el botón principal */
+    cursor: pointer;
+}
+
+/* --- AÑADE ESTAS REGLAS CSS --- */
+
+#splash-next-button {
+    position: absolute;
+    bottom: 40px; /* Lo posiciona en la parte inferior */
+    left: 50%;
+    transform: translateX(-50%); /* Lo centra horizontalmente */
+    padding: 12px 40px;
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--hch-blue); /* Letras azules */
+    background-color: var(--hch-yellow); /* Fondo amarillo */
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+    z-index: 31; /* Asegura que esté por encima del video */
+}
+
+#splash-next-button:hover {
+    transform: translateX(-50%) scale(1.05); /* Pequeño efecto al pasar el mouse */
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+    
+.auth-form .link-button { background: none; border: none; color: var(--hch-blue); cursor: pointer; text-align: center; margin-top: 10px; }
+#auth-error { color: red; text-align: center; margin-top: 10px; font-size: 14px; }
+
+/* --- INICIO DE ESTILOS PARA EL BOTÓN DE SECHIN --- */
+
+.sechin-button {
+    position: absolute;
+    bottom: 35px; /* Misma altura que el botón de menú hamburguesa */
+    right: 25px;  /* Lo posiciona en la esquina derecha */
+    width: 50px;
+    height: 50px;
+    background-color: transparent; /* Sin color de fondo */
+    border: none;
+    border-radius: 50%;
+    padding: 0;
+    cursor: pointer;
+    z-index: 12;
+    transition: transform 0.2s ease-out, opacity 0.4s ease-out;
+    opacity: 0; /* Por defecto, está oculto */
+    pointer-events: none; /* Por defecto, no se puede hacer clic */
+}
+
+.sechin-button img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.sechin-button:hover {
+    transform: scale(1.1); /* Efecto de zoom al pasar el mouse */
+}
+
+/* Clase para hacerlo visible */
+.sechin-button.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* --- FIN DE ESTILOS --- */
+
+
+
+    
+/* --- FIN DEL CÓDIGO CSS --- */
+
+</style>
+</head>
+<body>
+ <!-- === INICIO DEL CÓDIGO HTML === -->
+
+  
+
+
+
+<div class="mobile-container">
+    <!-- === VISTA DE AUTENTICACIÓN (LOGIN Y REGISTRO) === -->
+    <!-- === VISTA DE AUTENTICACIÓN (LOGIN Y REGISTRO) - CORREGIDA === -->
+
+<!-- === VIDEO DE INTRODUCCIÓN (NUEVO) === -->
+        <div id="splash-container">
+    <!-- La palabra 'muted' ha sido eliminada -->
+    <video id="splash-video" autoplay muted loop playsinline>
+
+        <source src="https://github.com/Dafon1981/recepcion_emergencia/blob/main/modelo3.mp4?raw=true" type="video/mp4">
+    </video>
+    <button id="splash-next-button" onclick="goToLogin( )">Siguiente</button>
+</div>
+
+
+    
+<div id="auth-container">
+    <form id="login-form" class="auth-form active" onsubmit="event.preventDefault(); handleLogin();">
+        <h2>Iniciar Sesión</h2>
+        <!-- Cambiado a type="text" y placeholder="Usuario" -->
+        <input type="text" id="login-user" placeholder="Usuario" required>
+        <!-- Cambiado a type="text" para que la clave sea visible -->
+        <input type="text" id="login-password" placeholder="Clave" required>
+        <button type="submit">Ingresar</button>
+        <button type="button" class="secondary-button" onclick="toggleAuthForms()">Registrar</button>
+    </form>
+
+    <form id="register-form" class="auth-form" onsubmit="event.preventDefault(); handleRegister();">
+    <h2>Crear Cuenta</h2>
+    <!-- Campos obligatorios -->
+    <input type="text" id="register-name" placeholder="Nombre de Usuario" required>
+    <input type="password" id="register-password" placeholder="Clave" required>
+    
+    <!-- Campos opcionales (se ha quitado el 'required') -->
+    <input type="email" id="register-email" placeholder="Correo Electrónico (Opcional)">
+    <input type="tel" id="register-phone" placeholder="Teléfono (Opcional)">
+    
+    <button type="submit">Crear Cuenta</button>
+    <button type="button" class="link-button" onclick="toggleAuthForms()">Ya tengo una cuenta</button>
+</form>
+
+
+
+    
+    <p id="auth-error" style="display:none;"></p>
+</div>
+
+
+    <div id="main-content" style="display: none;">
+        <header id="main-header" class="header">
+    <div class="header-title" onclick="returnToMainMenu()">Recepcion Emergencia</div>
+    <!-- Esta línea ahora llama a la función de volver al menú principal -->
+   <!-- BOTÓN DE CERRAR SESIÓN MEJORADO -->
+<!-- Botón para volver al menú principal desde una vista -->
+<button class="logout-button" onclick="returnToMainMenu()">&#x27A4;</button> 
+
+
+</header>
+
+       <video id="assistant-video" class="initial-state" autoplay muted loop playsinline>
+    <!-- === VIDEO ACTUALIZADO === -->
+    <source src="https://github.com/Dafon1981/recepcion_emergencia/blob/main/menuvideo2.mp4?raw=true" type="video/mp4">
+</video>
+
+        <button id="btn-servicios" class="menu-button" onclick="handleMenuClick('Busqueda', this )">Busqueda</button>
+    <button id="btn-portafolio" class="menu-button" onclick="handleMenuClick('Observados', this)">Observados</button>
+        <button id="btn-nosotros" class="menu-button" onclick="handleMenuClick('Nosotros', this)">Conocimiento</button>
+        <button id="btn-contacto" class="menu-button" onclick="handleMenuClick('Contacto', this)">Contacto</button>
+        <button id="btn-administrar" class="menu-button" onclick="handleMenuClick('Administrar', this)">Administrar</button>
+        <!-- ¡NUEVO BOTÓN DE CERRAR SESIÓN! -->
+<button id="btn-logout" class="menu-button logout-style" onclick="handleLogout()">Cerrar Sesión</button>
+        <button id="menu-toggle" class="menu-toggle" onclick="returnToMainMenu()">≡</button>
+        <!-- ¡NUEVO BOTÓN DE SECHIN! -->
+<button id="sechin-button" class="sechin-button">
+    <img src="https://github.com/Dafon1981/Sechin/blob/main/sechinaudiobutton.png?raw=true" alt="Botón Sechin">
+</button>
+
+        <!-- Contenedor de publicidad ahora con un video -->
+
+
+    </div>
+    
+    <div id="view-busqueda" class="content-view">
+        <div id="search-main-view">
+            <h2>Búsqueda de Pacientes</h2>
+            <p>Ingrese Paciente, NFUA o Episodio para buscar.</p>
+            <!-- El formulario ahora tendrá una clase para manejar mejor la disposición vertical -->
+<form class="search-form vertical" onsubmit="event.preventDefault(); searchPatients();">
+    <div class="main-search-row">
+        <input type="text" id="search-input-field" class="search-input" placeholder="Buscar por Paciente, NFUA o Episodio...">
+        <button type="submit" class="search-button"><img src="https://cdn-icons-png.flaticon.com/512/11367/11367109.png" alt="Buscar"></button>
+    </div>
+    <!-- ¡NUEVO CAMPO DE FECHA! -->
+    <div class="date-search-row">
+        <label for="search-date-field">...o buscar por Fecha de Atención:</label>
+        <input type="date" id="search-date-field" class="date-input">
+    </div>
+</form>
+
+            <div class="loading-spinner" id="loading-busqueda">Buscando...</div>
+            <div class="search-results-container" id="results-container-busqueda"></div>
+        </div>
+        <div id="patient-details-view">
+            <h3>Detalles del Paciente</h3>
+            <div id="details-content"></div>
+            <button class="back-button" onclick="backToResults( )">Volver a la lista</button>
+        </div>
+    </div>
+
+    <div id="view-observados" class="content-view">
+        <div id="observados-main-view">
+            <h2>Observados</h2>
+            <p>Busque pacientes en observación.</p>
+            <form class="search-form" onsubmit="event.preventDefault(); searchObservados();">
+                <input type="text" id="search-input-observados" class="search-input" placeholder="Buscar en observados...">
+                <button type="submit" class="search-button"><img src="https://cdn-icons-png.flaticon.com/512/11367/11367109.png" alt="Buscar"></button>
+            </form>
+            <div class="loading-spinner" id="loading-observados">Buscando...</div>
+            <div class="search-results-container" id="results-container-observados"></div>
+        </div>
+    </div>
+
+   <div id="view-nosotros" class="content-view">
+    <h2>Acerca de Nosotros</h2>
+
+    <!-- Sección de Misión y Meta -->
+    <div class="intro-text">
+        <h3>Nuestra Misión</h3>
+        <p>Registrar y contabilizar cada Formato Único de Atención (FUA) de Emergencia para asegurar su correcto procesamiento. Nuestra labor es ser el primer filtro de calidad, garantizando que cada FUA cumpla con todos los requisitos normativos del SIS antes de iniciar su ciclo de cobro, maximizando así la recuperación de costos para el hospital y manteniendo la integridad de nuestros registros.</p>
+        
+        <h3>Nuestra Meta</h3>
+        <p>Alcanzar un procesamiento de FUAs con cero errores, eliminando las devoluciones y observaciones por parte de las oficinas de auditoría. Esta aplicación es un reflejo de ese compromiso: una herramienta diseñada para estandarizar nuestro flujo de trabajo, documentar cada paso y proporcionar una trazabilidad completa que demuestre la eficiencia y precisión de nuestra gestión diaria.</p>
+    </div>
+
+
+       
+    <!-- Sección de Preguntas Frecuentes Interactivas -->
+   <!-- Sección de Preguntas Frecuentes Interactivas (ACTUALIZADA) -->
+<div class="faq-container">
+    
+    <details class="faq-item">
+        <summary><strong>¿Qué FUAs se RECHAZAN y devuelven?</strong></summary>
+        <div class="faq-content">
+            <p>Un FUA debe ser <strong>devuelto inmediatamente a Cuentas Corrientes</strong> si no pertenece al flujo de cobro de Emergencia SIS. Las causas de rechazo inmediato son:</p>
+            <ul>
+                <li><strong>No es SIS:</strong> El FUA pertenece a un seguro SOAT, es Pagante, de un Trabajador del Hospital o cualquier otro convenio.</li>
+                <li><strong>No es de Emergencia:</strong> El FUA no corresponde al código de servicio de Emergencia (062).</li>
+            </ul>
+            <p><em>Separar estos casos es el primer paso para un flujo de trabajo limpio.</em></p>
+        </div>
+    </details>
+
+    <details class="faq-item">
+        <summary><strong>¿Qué FUAs van a SEGUIMIENTO (Observados)?</strong></summary>
+        <div class="faq-content">
+            <p>Los FUAs que tienen potencial de ser cobrados pero presentan errores subsanables son enviados a "Seguimiento". Las causas más comunes son:</p>
+            <ul>
+                <li><strong>Falta Sello/Firma del Médico:</strong> Si falta el sello y/o la firma del médico en el FUA o en la Historia Clínica. <strong>Ambos son obligatorios sin excepción.</strong></li>
+                <li><strong>Firma del Médico en Lugar Incorrecto:</strong> Si la firma del médico en la historia no está en la hoja de afiliación correspondiente, sino en otra sección (ej: datos del paciente).</li>
+                <li><strong>Documentación Incompleta:</strong> Si solo se entrega la Historia Clínica (falta el FUA) o solo se entrega el FUA (falta la Historia Clínica).</li>
+                <li><strong>Fichas Vencidas:</strong> Si el FUA o la Historia Clínica tienen una fecha de atención que excede el plazo permitido para su procesamiento regular.</li>
+            </ul>
+        </div>
+    </details>
+
+    <details class="faq-item">
+        <summary><strong>¿Cuál es el flujo de trabajo completo?</strong></summary>
+        <div class="faq-content">
+            <p>El viaje de un FUA es un proceso secuencial donde cada etapa cumple un rol específico. Conocerlo nos permite entender la importancia de nuestro trabajo.</p>
+            <ol>
+                <li><strong>Consultorios / Módulo 9 (Origen):</strong> Aquí se genera el FUA durante la atención médica de emergencia.</li>
+                <li><strong>Cuentas Corrientes (Acopio):</strong> Agrupan los FUAs generados antes de pasarlos a nuestra área.</li>
+                <li><strong>Recepción / Nosotros (Filtro y Clasificación):</strong> ¡Nuestra etapa clave! Auditamos y clasificamos los FUAs según el destino del paciente.</li>
+                <li><strong>Asignación (Ruta Alterna):</strong> Recibe los FUAs de pacientes hospitalizados/transferidos para un proceso de facturación distinto.</li>
+                <li><strong>Auditoría (Revisión Final):</strong> La oficina de Seguros realiza la revisión final antes del cobro al Estado.</li>
+                <li><strong>Archivo:</strong> Una vez procesado, el FUA se almacena, completando su ciclo de vida.</li>
+            </ol>
+        </div>
+    </details>
+
+    <details class="faq-item">
+        <summary><strong>Pautas Clave para la Firma del PACIENTE</strong></summary>
+        <div class="faq-content">
+            <p>La firma del paciente o apoderado es un requisito indispensable, pero tiene reglas específicas que debemos dominar:</p>
+            <ul>
+                <li><strong>Si firma el Titular (el propio paciente):</strong> Basta con su firma y/o huella digital en el espacio designado del FUA.</li>
+                <li><strong>Si firma un Acompañante/Apoderado:</strong> Es OBLIGATORIO que en el reverso del FUA (o en la historia clínica) se registren los datos completos del firmante: Nombres, DNI, Firma, Huella y Parentezco.</li>
+                <li><strong>¿Cuándo NO es necesaria la firma del paciente?</strong> Si el FUA no tiene procedimientos, recetas, ni indicaciones médicas. En estos casos excepcionales, se puede procesar sin firma, aunque siempre es preferible tenerla.</li>
+            </ul>
+        </div>
+    </details>
+
+</div>
+
+
+
+
+       
+</div>
+
+
+    <div id="view-administrar" class="content-view">
+        <h2>Administrar</h2>
+        <div class="tab-container">
+            <button class="tab-button active" onclick="openTab(event, 'add-obs' )">Añadir Obs.</button>
+            <button class="tab-button" onclick="openTab(event, 'user-list'); loadUsers();">Lista de Usuarios</button>
+        </div>
+        <div id="add-obs" class="tab-content active">
+            <div id="add-obs-content">
+                <div id="ingresos-container">
+                    <div class="ingreso-entry">
+                        <div class="form-group"><label>NFUA o Episodio</label><input type="text"></div>
+                        <div class="form-group"><label>Fecha</label><input type="date"></div>
+                        <div class="form-group"><label>Observación</label><textarea rows="2"></textarea></div>
+                    </div>
+                </div>
+                <div class="observation-controls">
+                    <button class="control-button add-btn" onclick="addIngreso()">+</button>
+                    <button class="control-button remove-btn" onclick="removeIngreso()">-</button>
+                </div>
+            </div>
+          <button class="save-button" onclick="saveObservations()">Guardar</button>
+
+        </div>
+        <div id="user-list" class="tab-content">
+            <div class="loading-spinner" id="loading-users">Cargando usuarios...</div>
+            <div id="user-list-container"></div>
+        </div>
+    </div>
+</div>
+
+<!-- === FIN DEL CÓDIGO HTML === -->
+
+
+    <script>
+       // === INICIO DEL CÓDIGO JAVASCRIPT ===
+
+// === INICIO DEL CÓDIGO JAVASCRIPT (ORDENADO Y CORREGIDO) ===
+
+// --- 1. CONSTANTES GLOBALES ---
+// Primero, declaramos todas las constantes que apuntan a elementos del HTML.
+// Esto se hace una sola vez.
+const supabaseUrl = 'https://esiklpxyectbekxvajnw.supabase.co';
+       const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzaWtscHh5ZWN0YmVreHZham53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2OTI1MjEsImV4cCI6MjA3NzI2ODUyMX0.mtQnqUrTmhmN1DQxOAUnGpizhYZobStHDH0cz_XfKGU';
+      const supabase = window.supabase.createClient(supabaseUrl, supabaseKey); // <-- Sin espacio extra
+
+
+const splashContainer = document.getElementById('splash-container');
+const authContainer = document.getElementById('auth-container');
+const mainContent = document.getElementById('main-content');
+const assistantVideo = document.getElementById('assistant-video');
+const menuButtons = document.querySelectorAll('.menu-button');
+const menuToggle = document.getElementById('menu-toggle');
+const contentViews = document.querySelectorAll('.content-view');
+const errorElement = document.getElementById('auth-error');
+
+// --- 2. VARIABLES GLOBALES ---
+// Variables que cambiarán durante el uso de la app.
+let currentSearchResults = [];
+let currentUserData = null;
+
+// --- INICIO DE VARIABLES PARA EL CARRUSEL DE TÍTULO ---
+let titleInterval; // Guardará el intervalo del carrusel de texto.
+const originalTitle = "Recepción Emergencia"; // Guardamos el título original.
+const rotatingTitles = [
+    "Bienvenidos a Recepción",
+    "Emergencia Área de Seguros",
+    "Tenemos el registro de un 90%",
+    "Registrado con Búsqueda",
+    "Probabilidades de Ubicación"
+];
+let currentTitleIndex = 0;
+// --- FIN DE VARIABLES ---
+
+
+        
+// --- 3. LÓGICA DE INICIO DE LA APP ---
+// Este es el único 'DOMContentLoaded'. Se ejecuta cuando la página carga.
+document.addEventListener('DOMContentLoaded', () => {
+    // Ocultamos las secciones principales al inicio.
+    authContainer.style.display = 'none';
+    mainContent.style.display = 'none';
+    assistantVideo.classList.add('hidden');
+});
+
+// --- 4. FUNCIONES PRINCIPALES ---
+// Aquí van todas las funciones que la aplicación usará.
+
+
+// --- INICIO DE FUNCIONES PARA EL CARRUSEL DE TÍTULO ---
+
+/**
+ * Cambia el texto del título de la cabecera.
+ * @param {string} newTitle El nuevo texto a mostrar.
+ */
+function setHeaderTitle(newTitle) {
+    const headerTitleElement = document.querySelector('.header-title');
+    if (headerTitleElement) {
+        headerTitleElement.textContent = newTitle;
+    }
+}
+
+/**
+ * Inicia la rotación de títulos en la cabecera.
+ */
+function startTitleCarousel() {
+    // Nos aseguramos de no tener intervalos duplicados.
+    clearInterval(titleInterval); 
+    
+    // Ponemos el título original inmediatamente.
+    setHeaderTitle(originalTitle);
+    currentTitleIndex = 0;
+
+    // Iniciamos el intervalo para cambiar los títulos.
+    titleInterval = setInterval(() => {
+        currentTitleIndex = (currentTitleIndex + 1) % rotatingTitles.length;
+        setHeaderTitle(rotatingTitles[currentTitleIndex]);
+    }, 4000); // 4000 milisegundos = 4 segundos
+}
+
+/**
+ * Detiene la rotación de títulos y muestra un texto específico.
+ * @param {string} textToShow El texto que se quedará fijo.
+ */
+function stopTitleCarousel(textToShow) {
+    clearInterval(titleInterval);
+    setHeaderTitle(textToShow);
+}
+
+// --- FIN DE FUNCIONES PARA EL CARRUSEL DE TÍTULO ---
+
+
+
+
+
+        
+/**
+ * Va a la pantalla de login y autocompleta el último usuario si existe.
+ */
+function goToLogin() {
+    splashContainer.style.opacity = '0';
+    authContainer.style.display = 'flex';
+    
+    setTimeout(() => {
+        authContainer.style.opacity = '1';
+        
+        // --- ¡AQUÍ ESTÁ LA LÓGICA DE AUTOCOMPLETADO! ---
+        
+        // 1. Buscamos el último nombre de usuario guardado.
+        const lastUsername = localStorage.getItem('lastUsername');
+        
+        const usernameInput = document.getElementById('login-user');
+        const passwordInput = document.getElementById('login-password');
+
+        // 2. Si encontramos un nombre de usuario...
+        if (lastUsername) {
+            // ...lo escribimos en el campo de usuario.
+            usernameInput.value = lastUsername;
+            // Y ponemos el cursor (foco) en el campo de la contraseña.
+            passwordInput.focus();
+        } else {
+            // Si no hay usuario guardado, ponemos el foco en el campo de usuario.
+            usernameInput.focus();
+        }
+        
+    }, 100);
+    
+    setTimeout(() => {
+        splashContainer.style.display = 'none';
+    }, 800);
+}
+
+
+
+
+        
+// Función para cambiar entre login y registro
+function toggleAuthForms() {
+    document.getElementById('login-form').classList.toggle('active');
+    document.getElementById('register-form').classList.toggle('active');
+    errorElement.style.display = 'none';
+}
+
+
+/**
+ * Cierra la sesión del usuario y reinicia la aplicación.
+ */
+function handleLogout() {
+    // 1. Preguntamos al usuario si realmente quiere salir.
+    const isConfirmed = confirm('¿Estás seguro de que quieres cerrar la sesión?');
+
+    // 2. Si el usuario cancela, no hacemos nada.
+    if (!isConfirmed) {
+        return;
+    }
+
+    // 3. Limpiamos los datos del usuario actual.
+    currentUserData = null;
+    
+    // 4. Eliminamos el nombre de usuario guardado para que el próximo login empiece de cero.
+    localStorage.removeItem('lastUsername');
+
+    // 5. Recargamos la página. Esto es lo más simple y efectivo para reiniciar
+    //    el estado de la aplicación y volver a la pantalla de inicio/login.
+    location.reload();
+}
+
+
+        
+// Función para manejar el inicio de sesión
+// Reemplaza la función existente con esta
+async function handleLogin() {
+    // --- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---
+    // Usamos .trim() para eliminar espacios al inicio y al final.
+    const user = document.getElementById('login-user').value.trim();
+    const password = document.getElementById('login-password').value.trim();
+    
+    errorElement.style.display = 'none';
+
+    // El resto de la función no necesita cambios, ya que ahora trabaja con los datos limpios.
+    const { data: userData, error: userError } = await supabase
+        .from('usuarios')
+        .select('*')
+        .eq('usuario', user)
+        .single();
+
+    if (userError || !userData || userData.clave !== password) {
+        errorElement.textContent = 'Usuario o clave incorrectos.';
+        errorElement.style.display = 'block';
+        return;
+    }
+
+    if (!userData.habilitado) {
+        errorElement.textContent = 'Este usuario está deshabilitado.';
+        errorElement.style.display = 'block';
+        return;
+    }
+
+    currentUserData = userData;
+    // ... dentro de handleLogin()
+    if (!userData.habilitado) {
+        // ...
+        return;
+    }
+
+    currentUserData = userData;
+
+    // --- ¡AQUÍ ESTÁ EL CAMBIO! ---
+    // Guardamos el nombre de usuario en la memoria del navegador.
+    localStorage.setItem('lastUsername', user);
+
+    authContainer.style.opacity = '0';
+// ...
+
+    authContainer.style.opacity = '0';
+    setTimeout(() => {
+        authContainer.style.display = 'none';
+        showMainMenu();
+    }, 500);
+}
+
+
+
+
+
+
+
+        
+async function handleRegister() {
+    const name = document.getElementById('register-name').value.trim();
+    const email = document.getElementById('register-email').value.trim();
+    const password = document.getElementById('register-password').value.trim();
+    const phone = document.getElementById('register-phone').value.trim();
+    errorElement.style.display = 'none';
+
+    // 1. Verificamos que los campos obligatorios no estén vacíos.
+    if (!name || !password) {
+        errorElement.textContent = 'El nombre de usuario y la clave son obligatorios.';
+        errorElement.style.display = 'block';
+        return;
+    }
+
+    const { data: existingUser } = await supabase
+        .from('usuarios')
+        .select('usuario')
+        .eq('usuario', name)
+        .single();
+
+    if (existingUser) {
+        errorElement.textContent = 'El nombre de usuario ya existe.';
+        errorElement.style.display = 'block';
+        return;
+    }
+
+    // 2. Insertamos el nuevo usuario con 'habilitado' en 'false'.
+    const { error: insertError } = await supabase.from('usuarios').insert({
+        usuario: name,
+        email: email,
+        clave: password,
+        telefono: phone,
+        estatus: 'usuario',
+        habilitado: false // <-- ¡CAMBIO IMPORTANTE!
+    });
+
+    if (insertError) {
+        errorElement.textContent = 'Error al crear la cuenta: ' + insertError.message;
+        errorElement.style.display = 'block';
+        return;
+    }
+
+    // 3. Llamamos a la Edge Function para notificar al administrador.
+    try {
+        await supabase.functions.invoke('notify-new-user', {
+            body: { username: name, email: email, phone: phone },
+        });
+    } catch (functionError) {
+        console.error("Error al notificar al administrador:", functionError.message);
+        // No detenemos al usuario por esto, pero lo registramos en la consola.
+    }
+
+    // 4. Mostramos un mensaje de éxito al usuario.
+    alert('¡Registro exitoso! Tu cuenta ha sido creada y está pendiente de aprobación por un administrador.');
+    toggleAuthForms(); // Volvemos al formulario de login.
+}
+
+
+
+        
+// Función para mostrar el menú principal después del login
+function showMainMenu() {
+    mainContent.style.display = 'block';
+    document.getElementById('btn-administrar').style.display = (currentUserData && currentUserData.estatus === 'admin') ? 'block' : 'none';
+    
+    // --- ¡AQUÍ INICIAMOS EL CARRUSEL DE TÍTULO! ---
+    startTitleCarousel();
+
+    assistantVideo.classList.remove('hidden');
+    assistantVideo.classList.add('initial-state');
+    
+    setTimeout(() => {
+        assistantVideo.classList.remove('initial-state');
+        assistantVideo.classList.add('side-state');
+        document.querySelectorAll('.menu-button').forEach(button => button.classList.add('visible'));
+
+ // ¡AQUÍ HACEMOS VISIBLE EL BOTÓN DE SECHIN!
+        document.getElementById('sechin-button').classList.add('visible');
+        
+    }, 500);
+    
+    searchObservados(true);
+}
+
+
+        
+// Función para manejar los clics en los botones del menú
+function handleMenuClick(section, clickedButton) {
+    menuButtons.forEach(button => button.classList.remove('active'));
+    if(clickedButton) clickedButton.classList.add('active');
+    
+    if (section === 'Contacto') { 
+        window.open('https://wa.me/51967188120', '_blank' );
+        setTimeout(() => { if(clickedButton) clickedButton.classList.remove('active'); }, 500);
+        return; 
+    }
+    
+    // --- ¡AQUÍ DETENEMOS EL CARRUSEL Y CAMBIAMOS EL TÍTULO! ---
+    stopTitleCarousel("Volver al Menú");
+
+    menuButtons.forEach(button => button.classList.add('hidden-by-view'));
+
+  // ¡AQUÍ OCULTAMOS EL BOTÓN DE SECHIN!
+    document.getElementById('sechin-button').classList.remove('visible');
+    
+    menuToggle.classList.add('visible');
+    assistantVideo.classList.add('hidden');
+    
+    contentViews.forEach(v => v.classList.remove('visible'));
+    
+    let sectionId = section;
+    if (section === 'Conocimiento') {
+        sectionId = 'Nosotros';
+    }
+    
+    let viewId = `view-${sectionId.toLowerCase().replace(/ /g, '-')}`;
+    const viewToShow = document.getElementById(viewId);
+    
+    if (viewToShow) { 
+        viewToShow.classList.add('visible'); 
+    }
+    
+    if (section === 'Administrar') { 
+        loadUsers(); 
+    }
+}
+
+
+
+
+        
+// Función para volver al menú principal desde una vista
+
+function returnToMainMenu() {
+    // --- ¡AQUÍ REINICIAMOS EL CARRUSEL DE TÍTULO! ---
+    startTitleCarousel();
+
+    menuToggle.classList.remove('visible');
+    
+    menuButtons.forEach(button => {
+        button.classList.remove('hidden-by-view', 'active');
+        button.classList.add('visible');
+
+
+ 
+        
+    });
+
+    // ¡AQUÍ LO HACEMOS VISIBLE DE NUEVO!
+    document.getElementById('sechin-button').classList.add('visible');
+    
+    assistantVideo.classList.remove('hidden');
+    
+    contentViews.forEach(v => v.classList.remove('visible'));
+}
+
+
+/**
+ * Normaliza un texto: lo convierte a minúsculas y le quita las tildes.
+ * Ejemplo: "Pérez García" -> "perez garcia"
+ * @param {string} text El texto a normalizar.
+ * @returns {string} El texto normalizado.
+ */
+function normalizeText(text) {
+    if (!text) return '';
+    return text
+        .toLowerCase() // 1. Convierte todo a minúsculas
+        .normalize("NFD") // 2. Descompone los caracteres (ej: "é" en "e" y "´")
+        .replace(/[\u0300-\u036f]/g, ""); // 3. Elimina los acentos diacríticos
+}
+
+
+
+
+        
+        
+        
+/**
+ * VERSIÓN FINAL Y PROFESIONAL de la búsqueda de pacientes.
+ * Realiza la búsqueda directamente en el servidor de Supabase, permitiendo
+ * buscar en TODA la tabla (más de 10,000 registros) de forma instantánea.
+ */
+async function searchPatients() {
+    const searchTerm = document.getElementById('search-input-field').value.trim();
+    const searchDate = document.getElementById('search-date-field').value;
+
+    const resultsContainer = document.getElementById('results-container-busqueda');
+    const loadingSpinner = document.getElementById('loading-busqueda');
+
+    loadingSpinner.style.display = 'block';
+    resultsContainer.innerHTML = '';
+
+    if (!searchTerm && !searchDate) {
+        loadingSpinner.style.display = 'none';
+        resultsContainer.innerHTML = '<p class="no-results">Ingrese un término o seleccione una fecha para buscar.</p>';
+        return;
+    }
+
+    try {
+        // 1. Empezamos a construir la consulta a Supabase.
+        let query = supabase.from('registros').select('*');
+
+        // 2. Si hay un término de búsqueda de texto, añadimos los filtros.
+        if (searchTerm) {
+            // .ilike() es para búsquedas de texto "insensibles a mayúsculas/minúsculas".
+            // El formato es: 'columna.ilike.%texto%'
+            // El .or() le dice a Supabase: "encuentra si coincide con ESTO O ESTO OTRO".
+            query = query.or(
+                `PACIENTE.ilike.%${searchTerm}%,` +
+                `Episodio.ilike.%${searchTerm}%,` +
+                `NFUA.ilike.%${searchTerm}%`
+            );
+        }
+
+        // 3. Si hay una fecha seleccionada, añadimos un filtro de fecha EXACTA.
+        if (searchDate) {
+            // .eq() significa "exactamente igual a".
+            query = query.eq('FecAte', searchDate);
+        }
+
+        // 4. Añadimos un límite a los RESULTADOS, no a la búsqueda.
+        // Esto es una buena práctica para no mostrar miles de resultados si la búsqueda es muy genérica.
+        query = query.limit(200);
+
+        // 5. Ejecutamos la consulta ya construida.
+        const { data: results, error } = await query;
+
+        if (error) throw error;
+
+        // El resto de la función para mostrar los resultados es exactamente la misma.
+        currentSearchResults = results; 
+
+        if (results.length === 0) {
+            resultsContainer.innerHTML = '<p class="no-results">No se encontraron resultados para los criterios seleccionados.</p>';
+        } else {
+            resultsContainer.innerHTML = results.map((patient, index) => {
+                // ... (el resto de tu código para generar el HTML del resultado no cambia)
+                let ubicacionHTML = '';
+                if (patient.FechaRegistro) {
+                    const fechaRegistro = new Date(patient.FechaRegistro);
+                    const hoy = new Date();
+                    fechaRegistro.setHours(0, 0, 0, 0);
+                    hoy.setHours(0, 0, 0, 0);
+                    
+                    const diffTiempo = hoy.getTime() - fechaRegistro.getTime();
+                    const diffDias = Math.ceil(diffTiempo / (1000 * 3600 * 24));
+
+                    let ubicacion = '';
+                    let colorClass = '';
+
+                    if (diffDias <= 5) { ubicacion = 'Asignación'; colorClass = 'ubicacion-asignacion'; } 
+                    else if (diffDias <= 18) { ubicacion = 'Auditoría'; colorClass = 'ubicacion-auditoria'; } 
+                    else if (diffDias <= 35) { ubicacion = 'Registro y Archivo de Seguros'; colorClass = 'ubicacion-seguros'; } 
+                    else { ubicacion = 'Archivo Central'; colorClass = 'ubicacion-central'; }
+                    
+                    ubicacionHTML = `  
+<span class="ubicacion-probable ${colorClass}">Ubicación Probable: ${ubicacion}</span>`;
+                }
+
+                const costo = parseFloat(patient.CostoTotal);
+                let consumoStatusHTML = (costo > 0) ? '<span class="consumo-status con-consumo">Con Consumo</span>' : '<span class="consumo-status sin-consumo">Sin Consumo</span>';
+                
+                let fechaAtencion = 'N/A';
+                if (patient.FecAte) {
+                    const parts = patient.FecAte.split('-');
+                    fechaAtencion = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                }
+
+                return `
+                    <div class="result-item" onclick="showPatientDetails(${index})">
+                        <div class="result-item-name">${patient.PACIENTE || 'N/A'}</div>
+                        <div class="result-item-sub">
+                            DNI: ${patient.NroDocumento || 'N/A'} | F. Atención: ${fechaAtencion}
+                            ${consumoStatusHTML}
+                            ${ubicacionHTML}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+    } catch (error) {
+        console.error('Error en la búsqueda:', error.message);
+        resultsContainer.innerHTML = `<p class="no-results">Error: ${error.message}</p>`;
+    } finally {
+        loadingSpinner.style.display = 'none';
+    }
+}
+
+
+        
+// Función para mostrar los detalles de un paciente
+function showPatientDetails(index) {
+    const patient = currentSearchResults[index];
+    if (!patient) return;
+    const detailsContent = document.getElementById('details-content');
+    let detailsHTML = '';
+    for (const key in patient) {
+        if (Object.hasOwnProperty.call(patient, key) && key !== 'id') {
+            detailsHTML += `<div class="detail-item"><label>${key.replace(/_/g, ' ')}</label><span>${patient[key] || 'No especificado'}</span></div>`;
+        }
+    }
+    detailsContent.innerHTML = detailsHTML;
+    document.getElementById('search-main-view').style.display = 'none';
+    document.getElementById('patient-details-view').style.display = 'flex';
+}
+
+// Función para volver a los resultados de búsqueda
+function backToResults() {
+    document.getElementById('patient-details-view').style.display = 'none';
+    document.getElementById('search-main-view').style.display = 'flex';
+}
+
+// Función para buscar en observados
+async function searchObservados(initialLoad = false) {
+    const searchTerm = initialLoad ? '' : document.getElementById('search-input-observados').value.trim();
+    const resultsContainer = document.getElementById('results-container-observados');
+    const loadingSpinner = document.getElementById('loading-observados');
+    
+    loadingSpinner.style.display = 'block';
+    resultsContainer.innerHTML = '';
+
+    let query = supabase.from('observados').select();
+    if (searchTerm) { 
+        query = query.or(`numero_fua_episodio.ilike.%${searchTerm}%,observacion.ilike.%${searchTerm}%`); 
+    }
+    const { data, error } = await query;
+    
+    loadingSpinner.style.display = 'none';
+
+    if (error) { 
+        console.error('Error:', error); 
+        resultsContainer.innerHTML = `<p class="no-results">Error: ${error.message}</p>`; 
+        return; 
+    }
+
+    if (data.length === 0) { 
+        resultsContainer.innerHTML = '<p class="no-results">No hay pacientes en observación.</p>'; 
+    } else { 
+        resultsContainer.innerHTML = data.map(item => {
+            let ubicacionHTML = '';
+            if (item.fecha) {
+                const fechaAtencion = new Date(item.fecha);
+                const hoy = new Date();
+                fechaAtencion.setHours(0, 0, 0, 0);
+                hoy.setHours(0, 0, 0, 0);
+                
+                const diffTiempo = hoy.getTime() - fechaAtencion.getTime();
+                const diffDias = Math.ceil(diffTiempo / (1000 * 3600 * 24));
+
+                let ubicacion = '';
+                if (diffDias <= 19) { ubicacion = 'Auditoría'; } 
+                else if (diffDias <= 30) { ubicacion = 'Archivo Digitación'; } 
+                else if (diffDias <= 32) { ubicacion = 'Archivo Seguros'; } 
+                else { ubicacion = 'Archivo Central'; }
+                ubicacionHTML = `<span class="ubicacion-probable">Ubicación Probable: ${ubicacion}</span>`;
+            }
+
+            const fechaFormateada = item.fecha ? new Date(item.fecha).toLocaleDateString('es-ES') : 'No especificada';
+
+            return `
+                <div class="result-item">
+                    <div class="result-item-name">NFUA/Episodio: ${item.numero_fua_episodio}</div>
+                    <div class="result-item-sub">
+                        Fecha: ${fechaFormateada}   
+
+                        Obs: ${item.observacion || 'Sin detalles'}   
+
+                        ${ubicacionHTML}
+                    </div>
+                </div>
+            `;
+        }).join(''); 
+    }
+}
+
+// Función para cambiar de pestaña en 'Administrar'
+function openTab(evt, tabName) {
+    const tabcontent = document.getElementsByClassName("tab-content");
+    for (let i = 0; i < tabcontent.length; i++) { tabcontent[i].classList.remove("active"); }
+    const tablinks = document.getElementsByClassName("tab-button");
+    for (let i = 0; i < tablinks.length; i++) { tablinks[i].classList.remove("active"); }
+    document.getElementById(tabName).classList.add("active");
+    evt.currentTarget.classList.add("active");
+}
+
+// Funciones para añadir/quitar ingresos en 'Añadir Obs.'
+function addIngreso() {
+    const container = document.getElementById('ingresos-container');
+    const newIngreso = document.createElement('div');
+    newIngreso.className = 'ingreso-entry';
+    newIngreso.innerHTML = `<div class="form-group"><label>NFUA o Episodio</label><input type="text"></div><div class="form-group"><label>Fecha</label><input type="date"></div><div class="form-group"><label>Observación</label><textarea rows="2"></textarea></div>`;
+    container.appendChild(newIngreso);
+}
+
+function removeIngreso() {
+    const container = document.getElementById('ingresos-container');
+    if (container.children.length > 1) { container.removeChild(container.lastChild); }
+}
+
+// Función para guardar observaciones
+async function saveObservations() {
+    const ingresosContainer = document.getElementById('ingresos-container');
+    const entries = ingresosContainer.getElementsByClassName('ingreso-entry');
+    const observationsToInsert = [];
+
+    for (const entry of entries) {
+        const numero = entry.querySelector('input[type="text"]').value.trim();
+        const fecha = entry.querySelector('input[type="date"]').value;
+        const observacion = entry.querySelector('textarea').value.trim();
+
+        if (numero) {
+            observationsToInsert.push({
+                numero_fua_episodio: numero, 
+                fecha: fecha || null,
+                observacion: observacion
+            });
+        }
+    }
+
+    if (observationsToInsert.length === 0) {
+        alert('No hay observaciones válidas para guardar.');
+        return;
+    }
+
+    const { error } = await supabase.from('observados').insert(observationsToInsert);
+
+    if (error) {
+        alert('Error al guardar las observaciones: ' + error.message);
+    } else {
+        alert(`¡${observationsToInsert.length} registro(s) guardado(s) con éxito!`);
+        ingresosContainer.innerHTML = `<div class="ingreso-entry"><div class="form-group"><label>NFUA o Episodio</label><input type="text"></div><div class="form-group"><label>Fecha</label><input type="date"></div><div class="form-group"><label>Observación</label><textarea rows="2"></textarea></div></div>`;
+        searchObservados(true);
+    }
+}
+
+// Función para cargar la lista de usuarios
+async function loadUsers() {
+    const usersContainer = document.getElementById('user-list-container');
+    const loadingSpinner = document.getElementById('loading-users');
+    loadingSpinner.style.display = 'block';
+    usersContainer.innerHTML = '';
+
+    const { data, error } = await supabase.from('usuarios').select();
+    loadingSpinner.style.display = 'none';
+
+    if (error) {
+        console.error('Error cargando usuarios:', error);
+        usersContainer.innerHTML = `<p class="no-results">Error al cargar usuarios: ${error.message}.</p>`;
+        return;
+    }
+
+    if (data.length === 0) {
+        usersContainer.innerHTML = '<p class="no-results">No se encontraron usuarios.</p>';
+    } else {
+        usersContainer.innerHTML = data.map(user => `
+            <div class="user-item">
+                <div class="user-info">
+                    <div class="user-name">${user.usuario} (${user.clave || 'N/A'}) <span class="user-status status-${user.estatus}">${user.estatus}</span></div>
+                    <div class="user-email">${user.email}</div>
+                </div>
+                <div class="user-actions">
+                    <label class="switch">
+                        <input type="checkbox" ${user.habilitado ? 'checked' : ''} onchange="toggleUserStatus('${user.id}', this.checked)">
+                        <span class="slider ${user.habilitado ? '' : 'disabled'}"></span>
+                    </label>
+                    <button class="delete-button" onclick="deleteUser('${user.id}')">X</button>
+                </div>
+            </div>
+        `).join('');
+    }
+}
+
+// Función para cambiar el estado de un usuario
+async function toggleUserStatus(userId, newStatus) {
+    if (currentUserData && currentUserData.id === userId && !newStatus) {
+        alert('No puedes deshabilitarte a ti mismo.');
+        loadUsers();
+        return;
+    }
+
+    const { error } = await supabase
+        .from('usuarios')
+        .update({ habilitado: newStatus })
+        .eq('id', userId);
+    
+    if (error) {
+        alert('Error al actualizar el estado del usuario: ' + error.message);
+    }
+    loadUsers(); // Recargamos la lista para que el color del switch se actualice
+}
+
+// Función para eliminar un usuario (pendiente de implementación segura)
+async function deleteUser(userId) {
+    if (!confirm('¿Estás seguro de que quieres eliminar a este usuario? Esta acción no se puede deshacer.')) {
+        return;
+    }
+    alert(`FUNCIONALIDAD PENDIENTE: Llamar a una Edge Function para borrar el usuario con ID: ${userId}.`);
+}
+
+// === FIN DEL CÓDIGO JAVASCRIPT ===
+setTimeout(goToLogin, 6000); // 6000 milisegundos = 6 segundos
+
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
